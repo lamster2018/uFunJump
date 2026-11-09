@@ -1,36 +1,45 @@
-# UFunJump
+# uFunJump
 
-Android 应用（Kotlin + Jetpack Compose），基于官方 `android create` 的 Empty Activity 模板（AGP 9）。
+iOS / Android 双端应用，基于 **Kotlin Multiplatform + Compose Multiplatform**：界面和业务逻辑写一次，两端共用。
+项目骨架由 JetBrains 官方 KMP 向导（kmp.jetbrains.com）生成。
 
-- applicationId / namespace：`com.ufun.jump`
-- minSdk 24 · targetSdk / compileSdk 37（Android 17）
+- Android applicationId / iOS Bundle ID：`com.ufun.jump`
+- Android：minSdk 24 · targetSdk / compileSdk 37
+- iOS：最低 iOS 18.2（`iosApp/iosApp.xcodeproj` 中的 `IPHONEOS_DEPLOYMENT_TARGET`）
+
+## 目录结构
+
+| 目录 | 作用 |
+| --- | --- |
+| `shared/src/commonMain` | 两端共用的 Compose 界面与业务逻辑（主要代码写在这里） |
+| `shared/src/androidMain` / `shared/src/iosMain` | 只在某一端生效的平台代码（`expect`/`actual`） |
+| `shared/src/commonTest` 等 | 共享代码的测试 |
+| `androidApp` | Android 应用外壳（`MainActivity` 调用共享的 `App()`） |
+| `iosApp` | iOS 应用外壳（Xcode 工程，SwiftUI 承载共享的 Compose 界面） |
 
 ## 工具链
 
-| 组件 | 版本 | 说明 |
-| --- | --- | --- |
-| Gradle（wrapper） | 9.9.0 | `./gradlew` 自动下载，无需单独安装 |
-| Android Gradle Plugin | 9.5.1 | 内置 Kotlin 支持，不再需要 `kotlin-android` 插件 |
-| Kotlin / Compose 编译器插件 | 2.4.21 | |
-| Compose BOM | 2026.09.00 | |
-| 构建用 JDK | 21 | 由 `gradle/gradle-daemon-jvm.properties` 锁定，与 shell 里的 `JAVA_HOME` 无关；本机找不到 JDK 21 时经 foojay 自动下载 |
-| 字节码目标 | Java 17 | `compileOptions` + Kotlin `jvmTarget` |
-| Android SDK | `~/Library/Android/sdk` | platforms `android-37.0`、build-tools 37.0.0、platform-tools 37.0.1、emulator 37.2 |
+| 组件 | 版本 |
+| --- | --- |
+| Kotlin | 2.4.21 |
+| Compose Multiplatform | 1.12.2（material3 1.12.0-alpha03，沿用官方向导的选择） |
+| Android Gradle Plugin | 9.5.1 |
+| Gradle（wrapper） | 9.9.0 |
+| 构建用 JDK | 21（由 `gradle/gradle-daemon-jvm.properties` 锁定，与 shell 的 `JAVA_HOME` 无关） |
 
 ## 常用命令
 
 ```bash
-./gradlew assembleDebug            # 编译 debug APK -> app/build/outputs/apk/debug/app-debug.apk
-./gradlew testDebugUnitTest        # 本地单元测试
-./gradlew installDebug             # 安装到已连接的设备 / 模拟器
-
-emulator -avd UFunJump_API37       # 启动本机模拟器（Pixel 8 外形，API 37 + Google Play）
-adb shell am start -n com.ufun.jump/.MainActivity
+./gradlew :androidApp:assembleDebug     # 编译 Android debug APK
+./gradlew :androidApp:installDebug      # 安装到已连接的设备 / 模拟器
+./gradlew :shared:testAndroidHostTest   # 共享代码测试（JVM）
+./gradlew :shared:iosSimulatorArm64Test # 共享代码测试（iOS 模拟器，需要 Xcode）
 ```
 
-命令行构建需要 `ANDROID_HOME` 指向 SDK（`~/.zshrc` 已配置）；用 Android Studio 打开时会自动生成 `local.properties`。
+iOS：用 Xcode 打开 `iosApp/iosApp.xcodeproj` 运行。Xcode 的构建阶段会自动调用 Gradle 编译 `shared` 模块。
 
-## 本机环境备注
+## iOS 发布前需要补的配置
 
-- SDK 管理：cmdline-tools 23 起 `sdkmanager` 已被新的 `android` CLI 取代，例如 `android sdk list`、`android sdk install platforms/android-37.0`。
-- Android Studio 2026.2 自带的 JBR 是 25；项目的 Gradle daemon 仍然会按配置使用 JDK 21，不需要在 IDE 里手动切换 Gradle JDK。
+- 安装完整版 Xcode（仅有 Command Line Tools 无法编译 iOS）。
+- 在 `iosApp/Configuration/Config.xcconfig` 填写 Apple 开发者账号的 `TEAM_ID`。
+- 在 Apple Developer 后台注册 Bundle ID `com.ufun.jump`。
